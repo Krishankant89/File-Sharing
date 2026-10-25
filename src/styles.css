@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-navy: #043873;
+  --color-navy-deep: #032952;
+  --color-blue: #4f9cf9;
+  --color-action: #1668c9;
+  --color-sand: #ffe492;
+  --color-ink: #212529;
+  --color-paper: #ffffff;
+  --color-foam: #d6e4f7;
+  --color-mist: #eef3fb;
+  --color-muted: #3e4e66;
+  --color-line: #d5deea;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-paper);
+    color: var(--color-ink);
+    overflow-x: hidden;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-action);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--color-sand);
+    color: var(--color-navy);
+  }
+}
+
+@keyframes peak-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.peak-orbit {
+  animation: peak-spin 48s linear infinite;
+}
+
+.peak-orbit-item {
+  animation: peak-spin 48s linear infinite reverse;
+}
+
+@keyframes peak-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.peak-caret {
+  animation: peak-blink 1.1s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .peak-orbit,
+  .peak-orbit-item,
+  .peak-caret {
+    animation: none;
+  }
+}
