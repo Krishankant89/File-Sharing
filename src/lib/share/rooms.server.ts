@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getSql, type Sql } from "@/lib/db";
 import { MAX_BYTES, MAX_FILES, RELAY_CAP_BYTES } from "@/lib/share/format";
 import { clientAddressFromTrustedProxy, readBoundedJson, RequestSizeError } from "@/lib/share/request-security.server";
+import { limitShareRequests } from "@/lib/share/rate-limit.server";
 
 const CODE = z.string().regex(/^\d{10}$/);
 const modeSchema = z.enum(["remote", "lan", "ssh"]);
@@ -91,6 +92,21 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { "content-type": "application/json", "cache-control": "no-store" },
   });
+}
+
+async function checkDistributedRateLimit(clientId: string): Promise<Response | null> {
+  try {
+    const result = await limitShareRequests(clientId);
+    if (result.ok) return null;
+
+    const response = json({ error: "Too many requests. Please slow down." }, 429);
+    if (typeof result.retryAfter === "number" && Number.isFinite(result.retryAfter)) {
+      response.headers.set("retry-after", String(Math.max(1, Math.ceil(result.retryAfter))));
+    }
+    return response;
+  } catch {
+    return json({ error: "The transfer service is temporarily unavailable. Please try again." }, 503);
+  }
 }
 
 function checkProductionDatabase(): Response | null {
@@ -229,6 +245,8 @@ async function handleGet(request: Request): Promise<Response> {
   const clientIp = clientAddress(request);
   const rate = checkRateLimit(clientIp);
   if (!rate.ok) return json({ error: rate.reason }, 429);
+  const distributedRateError = await checkDistributedRateLimit(clientIp);
+  if (distributedRateError) return distributedRateError;
 
   const url = new URL(request.url);
   const sql = await getSql();
@@ -296,6 +314,11 @@ async function handlePost(request: Request): Promise<Response> {
   await ensureSchema(sql);
   const op = z.object({ op: z.string() }).safeParse(body);
   if (!op.success) return json({ error: "invalid request" }, 400);
+
+  if (op.data.op === "create") {
+    const distributedRateError = await checkDistributedRateLimit(clientIp);
+    if (distributedRateError) return distributedRateError;
+  }
 
   if (op.data.op === "create") {
     const parsed = z

@@ -1,7 +1,7 @@
 export type PublicJwk = { kty: "EC"; crv: "P-256"; x: string; y: string };
 
 export async function generateRoomKeys(): Promise<{ publicJwk: PublicJwk; privateKey: CryptoKey }> {
-  const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+  const pair = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
   const exported = await crypto.subtle.exportKey("jwk", pair.publicKey);
   if (!exported.x || !exported.y) throw new Error("Could not create a session key.");
   return {
